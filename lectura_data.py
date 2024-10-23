@@ -25,19 +25,32 @@ if conexion is not None:
             ) AS ho_sallab, 
             ca.fe_regist,
             ca.fe_entasi::time,
-            ca.fe_salasi::time
+            ca.fe_salasi::time,(
+				case
+					when pe.ti_permis = 'H' then 'Permiso por Horas'
+					when pe.ti_permis = 'D' then 'Permiso por Día'
+				end
+			) ti_permis,
+			mp.no_motper,
+			jd.no_emplea no_jefdir
         FROM 
             wfgeshum.tbconasi ca
         JOIN 
             wfgeshum.tbemplea em ON ca.co_emplea = em.co_emplea
+		LEFT JOIN 
+			wfgeshum.tbpermis pe on em.co_emplea = pe.co_emplea and ca.fe_regist >= pe.fe_iniper and ca.fe_regist <= pe.fe_finper
+		LEFT JOIN 
+			wfgeshum.tcmotper mp on pe.co_motper = mp.co_motper
         JOIN 
             wfgeshum.tccarlab cl ON em.co_carlab = cl.co_carlab
         JOIN 
             wfgeshum.tcarelab ar ON em.co_arelab = ar.co_arelab
         JOIN 
             wfgeshum.tchorari ho ON em.co_horari = ho.co_horari
+		JOIN
+			wfgeshum.tbemplea jd ON em.co_jefdir = jd.co_emplea
         WHERE 
-            ca.fe_entasi::date = current_date
+            ca.fe_entasi::date = '2023-11-24'
             AND em.il_estado = true;
         """
         
@@ -53,6 +66,9 @@ if conexion is not None:
         df = df.rename(columns={'fe_regist': 'Fecha Marcación'})
         df = df.rename(columns={'fe_entasi': 'Hora Marcación Entrada'})
         df = df.rename(columns={'fe_salasi': 'Hora Marcación Salida'})
+        df = df.rename(columns={'ti_permis': 'Tipo de Permiso'})
+        df = df.rename(columns={'no_motper': 'Motivo de Permiso'})
+        df = df.rename(columns={'no_jefdir': 'Jefe Directo'})
         
         
         # Guardar el DataFrame en un archivo CSV
